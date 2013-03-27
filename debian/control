@@ -1,9 +1,8 @@
 Source: network-manager
 Section: net
 Priority: optional
-Maintainer: BlankOn Developers <blankon-dev@googlegroups.com>
-XSBC-Original-Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
-Uploaders: Michael Biebl <biebl@debian.org>
+Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
+Uploaders: Michael Biebl <biebl@debian.org>, Sjoerd Simons <sjoerd@debian.org>
 Build-Depends:
  debhelper (>= 8.1.0),
  dpkg-dev (>= 1.16.1),
@@ -80,7 +79,7 @@ Description: network management framework (daemon and userspace tools)
     address configuration.
 
 Package: network-manager-dev
-Architecture: all
+Architecture: any
 Section: devel
 Depends: ${misc:Depends}
 Description: network management framework (development files)
@@ -89,7 +88,7 @@ Description: network management framework (development files)
 
 Package: libnm-glib4
 Section: libs
-Architecture: all
+Architecture: any
 Depends:
  ${shlibs:Depends},
  ${misc:Depends}
@@ -105,13 +104,13 @@ Description: network management framework (GLib shared library)
 
 Package: libnm-glib-dev
 Section: libdevel
-Architecture: all
+Architecture: any
 Depends:
  libnm-glib4 (= ${binary:Version}),
  gir1.2-networkmanager-1.0 (= ${binary:Version}),
  ${misc:Depends},
- libnm-util-dev,
- network-manager-dev,
+ libnm-util-dev (>= ${binary:Version}),
+ network-manager-dev (>= ${binary:Version}),
  libglib2.0-dev,
  libdbus-glib-1-dev
 Description: network management framework (GLib interface)
@@ -126,7 +125,7 @@ Description: network management framework (GLib interface)
 
 Package: libnm-glib-vpn1
 Section: libs
-Architecture: all
+Architecture: any
 Depends:
  ${shlibs:Depends},
  ${misc:Depends}
@@ -142,11 +141,12 @@ Description: network management framework (GLib VPN shared library)
 
 Package: libnm-glib-vpn-dev
 Section: libdevel
-Architecture: all
+Architecture: any
 Depends:
  libnm-glib-vpn1 (= ${binary:Version}),
  ${misc:Depends},
- libnm-glib-dev
+ libnm-glib-dev (>= ${binary:Version}),
+ network-manager-dev (>= ${binary:Version}),
 Description: network management framework (GLib interface)
  NetworkManager is a system network service that manages your network devices
  and connections, attempting to keep active network connectivity when
@@ -159,7 +159,7 @@ Description: network management framework (GLib interface)
 
 Package: libnm-util2
 Section: libs
-Architecture: all
+Architecture: any
 Depends:
  ${shlibs:Depends},
  ${misc:Depends}
@@ -175,11 +175,12 @@ Description: network management framework (shared library)
 
 Package: libnm-util-dev
 Section: libdevel
-Architecture: all
+Architecture: any
 Depends:
  libnm-util2 (= ${binary:Version}),
  gir1.2-networkmanager-1.0 (= ${binary:Version}),
  ${misc:Depends},
+ network-manager-dev (>= ${binary:Version}),
  libglib2.0-dev,
  libdbus-glib-1-dev
 Description: network management framework (development files)
@@ -192,7 +193,7 @@ Description: network management framework (development files)
  This package contains header and development files.
 
 Package: network-manager-dbg
-Architecture: all
+Architecture: any
 Section: debug
 Priority: extra
 Depends:
@@ -209,7 +210,7 @@ Description: network management framework (debugging symbols)
 
 Package: gir1.2-networkmanager-1.0
 Section: introspection
-Architecture: all
+Architecture: any
 Depends: ${gir:Depends}, ${shlibs:Depends}, ${misc:Depends}
 Description: GObject introspection data for NetworkManager
  NetworkManager is a system network service that manages your network devices
