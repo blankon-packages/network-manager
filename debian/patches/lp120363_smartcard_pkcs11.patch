@@ -1,0 +1,726 @@
+---
+ libnm-util/libnm-util.ver                              |   10 
+ libnm-util/nm-setting-8021x.c                          |  303 ++++++++++++++++-
+ libnm-util/nm-setting-8021x.h                          |   21 +
+ src/supplicant-manager/nm-supplicant-config.c          |   99 +++++
+ src/supplicant-manager/nm-supplicant-config.h          |   15 
+ src/supplicant-manager/nm-supplicant-interface.c       |   37 ++
+ src/supplicant-manager/nm-supplicant-settings-verify.c |    7 
+ 7 files changed, 485 insertions(+), 7 deletions(-)
+
+Index: network-manager-0.8.9997/libnm-util/libnm-util.ver
+===================================================================
+--- network-manager-0.8.9997.orig/libnm-util/libnm-util.ver	2011-05-30 09:41:32.000000000 -0400
++++ network-manager-0.8.9997/libnm-util/libnm-util.ver	2011-05-30 09:45:12.473717799 -0400
+@@ -131,6 +131,16 @@
+ 	nm_setting_802_1x_get_phase2_private_key_scheme;
+ 	nm_setting_802_1x_get_pin;
+ 	nm_setting_802_1x_get_pin_flags;
++	nm_setting_802_1x_get_pkcs11_ca_cert;
++	nm_setting_802_1x_get_pkcs11_client_cert;
++	nm_setting_802_1x_get_pkcs11_engine_path;
++	nm_setting_802_1x_get_pkcs11_module_init_args;
++	nm_setting_802_1x_get_pkcs11_module_path;
++	nm_setting_802_1x_get_pkcs11_phase2_ca_cert;
++	nm_setting_802_1x_get_pkcs11_phase2_client_cert;
++	nm_setting_802_1x_get_pkcs11_phase2_private_key;
++	nm_setting_802_1x_get_pkcs11_private_key;
++	nm_setting_802_1x_get_pkcs11_slot;
+ 	nm_setting_802_1x_get_private_key_blob;
+ 	nm_setting_802_1x_get_private_key_format;
+ 	nm_setting_802_1x_get_private_key_password;
+Index: network-manager-0.8.9997/libnm-util/nm-setting-8021x.c
+===================================================================
+--- network-manager-0.8.9997.orig/libnm-util/nm-setting-8021x.c	2011-05-30 09:41:32.000000000 -0400
++++ network-manager-0.8.9997/libnm-util/nm-setting-8021x.c	2011-05-30 09:43:57.313717806 -0400
+@@ -136,6 +136,16 @@
+ 	char *phase2_private_key_password;
+ 	NMSettingSecretFlags phase2_private_key_password_flags;
+ 	gboolean system_ca_certs;
++	char *pkcs11_engine_path;
++	char *pkcs11_module_path;
++	char *pkcs11_module_init_args;
++	guint pkcs11_slot;
++	char *pkcs11_ca_cert;
++	char *pkcs11_client_cert;
++	char *pkcs11_private_key;
++	char *pkcs11_phase2_ca_cert;
++	char *pkcs11_phase2_client_cert;
++	char *pkcs11_phase2_private_key;
+ } NMSetting8021xPrivate;
+ 
+ enum {
+@@ -165,6 +175,16 @@
+ 	PROP_PIN,
+ 	PROP_PIN_FLAGS,
+ 	PROP_SYSTEM_CA_CERTS,
++	PROP_PKCS11_ENGINE_PATH,
++	PROP_PKCS11_MODULE_PATH,
++	PROP_PKCS11_MODULE_INIT_ARGS,
++	PROP_PKCS11_SLOT,
++	PROP_PKCS11_CA_CERT,
++	PROP_PKCS11_CLIENT_CERT,
++	PROP_PKCS11_PRIVATE_KEY,
++	PROP_PKCS11_PHASE2_CA_CERT,
++	PROP_PKCS11_PHASE2_CLIENT_CERT,
++	PROP_PKCS11_PHASE2_PRIVATE_KEY,
+ 
+ 	LAST_PROP
+ };
+@@ -1728,6 +1748,86 @@
+ 	return NM_SETTING_802_1X_CK_FORMAT_UNKNOWN;
+ }
+ 
++const char *
++nm_setting_802_1x_get_pkcs11_engine_path (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), NULL);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_engine_path;
++}
++
++const char *
++nm_setting_802_1x_get_pkcs11_module_path (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), NULL);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_module_path;
++}
++
++const char *
++nm_setting_802_1x_get_pkcs11_module_init_args (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), NULL);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_module_init_args;
++}
++
++guint
++nm_setting_802_1x_get_pkcs11_slot (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), 0);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_slot;
++}
++
++const char *
++nm_setting_802_1x_get_pkcs11_ca_cert (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), NULL);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_ca_cert;
++}
++
++const char *
++nm_setting_802_1x_get_pkcs11_client_cert (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), NULL);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_client_cert;
++}
++
++const char *
++nm_setting_802_1x_get_pkcs11_private_key (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), NULL);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_private_key;
++}
++
++const char *
++nm_setting_802_1x_get_pkcs11_phase2_ca_cert (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), NULL);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_phase2_ca_cert;
++}
++
++const char *
++nm_setting_802_1x_get_pkcs11_phase2_client_cert (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), NULL);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_phase2_client_cert;
++}
++
++const char *
++nm_setting_802_1x_get_pkcs11_phase2_private_key (NMSetting8021x *setting)
++{
++	g_return_val_if_fail (NM_IS_SETTING_802_1X (setting), NULL);
++
++	return NM_SETTING_802_1X_GET_PRIVATE (setting)->pkcs11_phase2_private_key;
++}
++
+ static void
+ need_secrets_password (NMSetting8021x *self,
+                        GPtrArray *secrets,
+@@ -1792,7 +1892,8 @@
+ 			return;
+ 		}
+ 
+-		if (need_private_key_password (blob, path, priv->phase2_private_key_password))
++		if (!priv->pkcs11_phase2_private_key &&
++			need_private_key_password (blob, path, priv->phase2_private_key_password))
+ 			g_ptr_array_add (secrets, NM_SETTING_802_1X_PHASE2_PRIVATE_KEY_PASSWORD);
+ 	} else {
+ 		scheme = nm_setting_802_1x_get_private_key_scheme (self);
+@@ -1806,7 +1907,8 @@
+ 			return;
+ 		}
+ 
+-		if (need_private_key_password (blob, path, priv->private_key_password))
++		if (!priv->pkcs11_private_key &&
++			need_private_key_password (blob, path, priv->private_key_password))
+ 			g_ptr_array_add (secrets, NM_SETTING_802_1X_PRIVATE_KEY_PASSWORD);
+ 	}
+ }
+@@ -1817,6 +1919,11 @@
+ 	NMSetting8021xPrivate *priv = NM_SETTING_802_1X_GET_PRIVATE (self);
+ 
+ 	if (phase2) {
++		/* TODO: add better checks for pkcs11 case */
++		if (priv->pkcs11_phase2_client_cert &&
++			priv->pkcs11_phase2_private_key)
++			return TRUE;
++
+ 		if (!priv->phase2_client_cert) {
+ 			g_set_error (error,
+ 			             NM_SETTING_802_1X_ERROR,
+@@ -1867,6 +1974,10 @@
+ 			}
+ 		}
+ 	} else {
++		/* TODO: add better checks for pkcs11 case */
++		if (priv->pkcs11_client_cert &&
++			priv->pkcs11_private_key)
++			return TRUE;
+ 		if (!priv->client_cert) {
+ 			g_set_error (error,
+ 			             NM_SETTING_802_1X_ERROR,
+@@ -2274,6 +2385,16 @@
+ 	g_free (priv->phase2_autheap);
+ 	g_free (priv->phase2_ca_path);
+ 	g_free (priv->password);
++	g_free (priv->pin);
++	g_free (priv->pkcs11_engine_path);
++	g_free (priv->pkcs11_module_path);
++	g_free (priv->pkcs11_module_init_args);
++	g_free (priv->pkcs11_ca_cert);
++	g_free (priv->pkcs11_client_cert);
++	g_free (priv->pkcs11_private_key);
++	g_free (priv->pkcs11_phase2_ca_cert);
++	g_free (priv->pkcs11_phase2_client_cert);
++	g_free (priv->pkcs11_phase2_private_key);
+ 
+ 	nm_utils_slist_free (priv->eap, g_free);
+ 
+@@ -2417,6 +2538,10 @@
+ 	case PROP_PASSWORD_FLAGS:
+ 		priv->password_flags = g_value_get_uint (value);
+ 		break;
++	case PROP_PIN:
++		g_free (priv->pin);
++		priv->pin = g_value_dup_string (value);
++		break;
+ 	case PROP_PRIVATE_KEY:
+ 		if (priv->private_key) {
+ 			g_byte_array_free (priv->private_key, TRUE);
+@@ -2458,6 +2583,45 @@
+ 	case PROP_SYSTEM_CA_CERTS:
+ 		priv->system_ca_certs = g_value_get_boolean (value);
+ 		break;
++	case PROP_PKCS11_ENGINE_PATH:
++		g_free (priv->pkcs11_engine_path);
++		priv->pkcs11_engine_path = g_value_dup_string (value);
++		break;
++	case PROP_PKCS11_MODULE_PATH:
++		g_free (priv->pkcs11_module_path);
++		priv->pkcs11_module_path = g_value_dup_string (value);
++		break;
++	case PROP_PKCS11_MODULE_INIT_ARGS:
++		g_free (priv->pkcs11_module_init_args);
++		priv->pkcs11_module_init_args = g_value_dup_string (value);
++		break;
++	case PROP_PKCS11_SLOT:
++		priv->pkcs11_slot = g_value_get_uint (value);
++		break;
++	case PROP_PKCS11_CA_CERT:
++		g_free (priv->pkcs11_ca_cert);
++		priv->pkcs11_ca_cert = g_value_dup_string (value);
++		break;
++	case PROP_PKCS11_CLIENT_CERT:
++		g_free (priv->pkcs11_client_cert);
++		priv->pkcs11_client_cert = g_value_dup_string (value);
++		break;
++	case PROP_PKCS11_PRIVATE_KEY:
++		g_free (priv->pkcs11_private_key);
++		priv->pkcs11_private_key = g_value_dup_string (value);
++		break;
++	case PROP_PKCS11_PHASE2_CA_CERT:
++		g_free (priv->pkcs11_phase2_ca_cert);
++		priv->pkcs11_phase2_ca_cert = g_value_dup_string (value);
++		break;
++	case PROP_PKCS11_PHASE2_CLIENT_CERT:
++		g_free (priv->pkcs11_phase2_client_cert);
++		priv->pkcs11_phase2_client_cert = g_value_dup_string (value);
++		break;
++	case PROP_PKCS11_PHASE2_PRIVATE_KEY:
++		g_free (priv->pkcs11_phase2_private_key);
++		priv->pkcs11_phase2_private_key = g_value_dup_string (value);
++		break;
+ 	default:
+ 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+ 		break;
+@@ -2520,6 +2684,9 @@
+ 	case PROP_PASSWORD_FLAGS:
+ 		g_value_set_uint (value, priv->password_flags);
+ 		break;
++	case PROP_PIN:
++		g_value_set_string (value, priv->pin);
++		break;
+ 	case PROP_PRIVATE_KEY:
+ 		g_value_set_boxed (value, priv->private_key);
+ 		break;
+@@ -2541,6 +2708,36 @@
+ 	case PROP_SYSTEM_CA_CERTS:
+ 		g_value_set_boolean (value, priv->system_ca_certs);
+ 		break;
++	case PROP_PKCS11_ENGINE_PATH:
++		g_value_set_string (value, priv->pkcs11_engine_path);
++		break;
++	case PROP_PKCS11_MODULE_PATH:
++		g_value_set_string (value, priv->pkcs11_module_path);
++		break;
++	case PROP_PKCS11_MODULE_INIT_ARGS:
++		g_value_set_string (value, priv->pkcs11_module_init_args);
++		break;
++	case PROP_PKCS11_SLOT:
++		g_value_set_uint (value, priv->pkcs11_slot);
++		break;
++	case PROP_PKCS11_CA_CERT:
++		g_value_set_string (value, priv->pkcs11_ca_cert);
++		break;
++	case PROP_PKCS11_CLIENT_CERT:
++		g_value_set_string (value, priv->pkcs11_client_cert);
++		break;
++	case PROP_PKCS11_PRIVATE_KEY:
++		g_value_set_string (value, priv->pkcs11_private_key);
++		break;
++	case PROP_PKCS11_PHASE2_CA_CERT:
++		g_value_set_string (value, priv->pkcs11_phase2_ca_cert);
++		break;
++	case PROP_PKCS11_PHASE2_CLIENT_CERT:
++		g_value_set_string (value, priv->pkcs11_phase2_client_cert);
++		break;
++	case PROP_PKCS11_PHASE2_PRIVATE_KEY:
++		g_value_set_string (value, priv->pkcs11_phase2_private_key);
++		break;
+ 	default:
+ 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+ 		break;
+@@ -2888,6 +3085,19 @@
+ 							   G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
+ 
+ 	/**
++	 * NMSetting8021x:pin:
++	 *
++	 * PIN used for 802.1x auth.
++	 **/
++	g_object_class_install_property
++		(object_class, PROP_PIN,
++		 g_param_spec_string (NM_SETTING_802_1X_PIN,
++							  "PIN",
++							  "PIN",
++							  NULL,
++							  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE | NM_SETTING_PARAM_SECRET));
++
++	/**
+ 	 * NMSetting8021x:password:
+ 	 *
+ 	 * Password used for EAP authentication methods.
+@@ -3095,6 +3305,87 @@
+ 							   FALSE,
+ 							   G_PARAM_READWRITE | G_PARAM_CONSTRUCT | NM_SETTING_PARAM_SERIALIZE));
+ 
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_ENGINE_PATH,
++		 g_param_spec_string (NM_SETTING_802_1X_PKCS11_ENGINE_PATH,
++						  "OpenSSL pkcs11 engine path",
++						  "OpenSSL pkcs11 engine path",
++						  NULL,
++						  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_MODULE_PATH,
++		 g_param_spec_string (NM_SETTING_802_1X_PKCS11_MODULE_PATH,
++						  "PKCS11 smartcard library module path",
++						  "PKCS11 smartcard library module path",
++						  NULL,
++						  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_MODULE_INIT_ARGS,
++		 g_param_spec_string (NM_SETTING_802_1X_PKCS11_MODULE_INIT_ARGS,
++						  "PKCS11 smartcard library initialization arguments",
++						  "PKCS11 smartcard library initialization arguments",
++						  NULL,
++						  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_SLOT,
++		 g_param_spec_uint (NM_SETTING_802_1X_PKCS11_SLOT,
++						"PKCS11 slot",
++						"PKCS11 slot",
++						0, 1000, 0,
++						G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_CA_CERT,
++		 g_param_spec_string (NM_SETTING_802_1X_PKCS11_CA_CERT,
++						  "PKCS11 object ID of CA certificate",
++						  "PKCS11 object ID of CA certificate",
++						  NULL,
++						  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_CLIENT_CERT,
++		 g_param_spec_string (NM_SETTING_802_1X_PKCS11_CLIENT_CERT,
++						  "PKCS11 object ID of client certificate",
++						  "PKCS11 object ID of client certificate",
++						  NULL,
++						  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_PRIVATE_KEY,
++		 g_param_spec_string (NM_SETTING_802_1X_PKCS11_PRIVATE_KEY,
++						  "PKCS11 object ID of private key",
++						  "PKCS11 object ID of private key",
++						  NULL,
++						  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_PHASE2_CA_CERT,
++		 g_param_spec_string (NM_SETTING_802_1X_PKCS11_PHASE2_CA_CERT,
++						  "PKCS11 object ID of phase2 CA certificate",
++						  "PKCS11 object ID of phase2 CA certificate",
++						  NULL,
++						  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_PHASE2_CLIENT_CERT,
++		 g_param_spec_string (NM_SETTING_802_1X_PKCS11_PHASE2_CLIENT_CERT,
++						  "PKCS11 object ID of phase2 client certificate",
++						  "PKCS11 object ID of phase2 client certificate",
++						  NULL,
++						  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++	g_object_class_install_property
++		(object_class, PROP_PKCS11_PHASE2_PRIVATE_KEY,
++		 g_param_spec_string (NM_SETTING_802_1X_PKCS11_PHASE2_PRIVATE_KEY,
++						  "PKCS11 object ID of phase2 private key",
++						  "PKCS11 object ID of phase2 private key",
++						  NULL,
++						  G_PARAM_READWRITE | NM_SETTING_PARAM_SERIALIZE));
++
++
+ 	/* Initialize crypto lbrary. */
+ 	if (!nm_utils_init (&error)) {
+ 		g_warning ("Couldn't initilize nm-utils/crypto system: %d %s",
+Index: network-manager-0.8.9997/libnm-util/nm-setting-8021x.h
+===================================================================
+--- network-manager-0.8.9997.orig/libnm-util/nm-setting-8021x.h	2011-05-30 09:41:32.000000000 -0400
++++ network-manager-0.8.9997/libnm-util/nm-setting-8021x.h	2011-05-30 09:43:57.323717806 -0400
+@@ -117,6 +117,16 @@
+ #define NM_SETTING_802_1X_PIN "pin"
+ #define NM_SETTING_802_1X_PIN_FLAGS "pin-flags"
+ #define NM_SETTING_802_1X_SYSTEM_CA_CERTS "system-ca-certs"
++#define NM_SETTING_802_1X_PKCS11_ENGINE_PATH "pkcs11-engine-path"
++#define NM_SETTING_802_1X_PKCS11_MODULE_PATH "pkcs11-module-path"
++#define NM_SETTING_802_1X_PKCS11_MODULE_INIT_ARGS "pkcs11-module-init-args"
++#define NM_SETTING_802_1X_PKCS11_SLOT "pkcs11-slot"
++#define NM_SETTING_802_1X_PKCS11_CA_CERT "pkcs11-ca-cert"
++#define NM_SETTING_802_1X_PKCS11_CLIENT_CERT "pkcs11-client-cert"
++#define NM_SETTING_802_1X_PKCS11_PRIVATE_KEY "pkcs11-private-key"
++#define NM_SETTING_802_1X_PKCS11_PHASE2_CA_CERT "pkcs11-phase2-ca-cert"
++#define NM_SETTING_802_1X_PKCS11_PHASE2_CLIENT_CERT "pkcs11-phase2-client-cert"
++#define NM_SETTING_802_1X_PKCS11_PHASE2_PRIVATE_KEY "pkcs11-phase2-private-key"
+ 
+ /* PRIVATE KEY NOTE: when setting PKCS#12 private keys directly via properties
+  * using the "blob" scheme, the data must be passed in PKCS#12 binary format.
+@@ -251,6 +261,17 @@
+ NMSetting8021xCKFormat nm_setting_802_1x_get_phase2_private_key_format   (NMSetting8021x *setting);
+ 
+ 
++const char *      nm_setting_802_1x_get_pkcs11_engine_path           (NMSetting8021x *setting);
++const char *      nm_setting_802_1x_get_pkcs11_module_path           (NMSetting8021x *setting);
++const char *      nm_setting_802_1x_get_pkcs11_module_init_args      (NMSetting8021x *setting);
++guint             nm_setting_802_1x_get_pkcs11_slot                  (NMSetting8021x *setting);
++const char *      nm_setting_802_1x_get_pkcs11_ca_cert               (NMSetting8021x *setting);
++const char *      nm_setting_802_1x_get_pkcs11_client_cert           (NMSetting8021x *setting);
++const char *      nm_setting_802_1x_get_pkcs11_private_key           (NMSetting8021x *setting);
++const char *      nm_setting_802_1x_get_pkcs11_phase2_ca_cert        (NMSetting8021x *setting);
++const char *      nm_setting_802_1x_get_pkcs11_phase2_client_cert    (NMSetting8021x *setting);
++const char *      nm_setting_802_1x_get_pkcs11_phase2_private_key    (NMSetting8021x *setting);
++
+ G_END_DECLS
+ 
+ #endif /* NM_SETTING_8021X_H */
+Index: network-manager-0.8.9997/src/supplicant-manager/nm-supplicant-config.c
+===================================================================
+--- network-manager-0.8.9997.orig/src/supplicant-manager/nm-supplicant-config.c	2011-05-30 09:41:33.000000000 -0400
++++ network-manager-0.8.9997/src/supplicant-manager/nm-supplicant-config.c	2011-05-30 09:43:57.323717806 -0400
+@@ -55,6 +55,9 @@
+ 	GHashTable *blobs;
+ 	guint32    ap_scan;
+ 	gboolean   dispose_has_run;
++	char       *pkcs11_engine_path;
++	char       *pkcs11_module_path;
++	char       *pkcs11_module_init_args;
+ } NMSupplicantConfigPrivate;
+ 
+ NMSupplicantConfig *
+@@ -91,6 +94,7 @@
+ 
+ 	priv->ap_scan = 1;
+ 	priv->dispose_has_run = FALSE;
++	priv->pkcs11_engine_path = g_strdup ("/usr/lib/engines/engine_pkcs11.so");
+ }
+ 
+ static gboolean
+@@ -241,9 +245,14 @@
+ static void
+ nm_supplicant_config_finalize (GObject *object)
+ {
++	NMSupplicantConfigPrivate *priv = NM_SUPPLICANT_CONFIG_GET_PRIVATE (object);
++
+ 	/* Complete object destruction */
+-	g_hash_table_destroy (NM_SUPPLICANT_CONFIG_GET_PRIVATE (object)->config);
+-	g_hash_table_destroy (NM_SUPPLICANT_CONFIG_GET_PRIVATE (object)->blobs);
++	g_hash_table_destroy (priv->config);
++	g_hash_table_destroy (priv->blobs);
++	g_free (priv->pkcs11_engine_path);
++	g_free (priv->pkcs11_module_path);
++	g_free (priv->pkcs11_module_init_args);
+ 
+ 	/* Chain up to the parent class */
+ 	G_OBJECT_CLASS (nm_supplicant_config_parent_class)->finalize (object);
+@@ -278,6 +287,69 @@
+ 	NM_SUPPLICANT_CONFIG_GET_PRIVATE (self)->ap_scan = ap_scan;
+ }
+ 
++const char *
++nm_supplicant_config_get_pkcs11_engine_path (NMSupplicantConfig * self)
++{
++	g_return_val_if_fail (NM_IS_SUPPLICANT_CONFIG (self), NULL);
++
++	return NM_SUPPLICANT_CONFIG_GET_PRIVATE (self)->pkcs11_engine_path;
++}
++
++void
++nm_supplicant_config_set_pkcs11_engine_path (NMSupplicantConfig * self,
++                                             const char *pkcs11_engine_path)
++{
++	NMSupplicantConfigPrivate *priv;
++
++	g_return_if_fail (NM_IS_SUPPLICANT_CONFIG (self));
++
++	priv = NM_SUPPLICANT_CONFIG_GET_PRIVATE (self);
++	g_free (priv->pkcs11_engine_path);
++	priv->pkcs11_engine_path = g_strdup (pkcs11_engine_path);
++}
++
++const char *
++nm_supplicant_config_get_pkcs11_module_path (NMSupplicantConfig * self)
++{
++	g_return_val_if_fail (NM_IS_SUPPLICANT_CONFIG (self), NULL);
++
++	return NM_SUPPLICANT_CONFIG_GET_PRIVATE (self)->pkcs11_module_path;
++}
++
++void
++nm_supplicant_config_set_pkcs11_module_path (NMSupplicantConfig * self,
++                                             const char *pkcs11_module_path)
++{
++	NMSupplicantConfigPrivate *priv;
++
++	g_return_if_fail (NM_IS_SUPPLICANT_CONFIG (self));
++
++	priv = NM_SUPPLICANT_CONFIG_GET_PRIVATE (self);
++	g_free (priv->pkcs11_module_path);
++	priv->pkcs11_module_path = g_strdup (pkcs11_module_path);
++}
++
++const char *
++nm_supplicant_config_get_pkcs11_module_init_args (NMSupplicantConfig * self)
++{
++	g_return_val_if_fail (NM_IS_SUPPLICANT_CONFIG (self), NULL);
++
++	return NM_SUPPLICANT_CONFIG_GET_PRIVATE (self)->pkcs11_module_init_args;
++}
++
++void
++nm_supplicant_config_set_pkcs11_module_init_args (NMSupplicantConfig * self,
++                                                  const char *pkcs11_module_init_args)
++{
++	NMSupplicantConfigPrivate *priv;
++
++	g_return_if_fail (NM_IS_SUPPLICANT_CONFIG (self));
++
++	priv = NM_SUPPLICANT_CONFIG_GET_PRIVATE (self);
++	g_free (priv->pkcs11_module_init_args);
++	priv->pkcs11_module_init_args = g_strdup (pkcs11_module_init_args);
++}
++
+ static void
+ get_hash_cb (gpointer key, gpointer value, gpointer user_data)
+ {
+@@ -589,6 +661,8 @@
+ 	gboolean success;
+ 	const char *key_mgmt, *auth_alg;
+ 	const char *psk;
++	const char *pkcs11_engine_path;
++	const char *pkcs11_module_path;
+ 
+ 	g_return_val_if_fail (NM_IS_SUPPLICANT_CONFIG (self), FALSE);
+ 	g_return_val_if_fail (setting != NULL, FALSE);
+@@ -705,6 +779,27 @@
+ 		}
+ 	}
+ 
++	pkcs11_engine_path = nm_setting_802_1x_get_pkcs11_engine_path (setting_8021x);
++	pkcs11_module_path = nm_setting_802_1x_get_pkcs11_module_path (setting_8021x);
++
++	if (pkcs11_engine_path && pkcs11_module_path) {
++		nm_supplicant_config_set_pkcs11_engine_path (self, pkcs11_engine_path);
++		nm_supplicant_config_set_pkcs11_module_path (self, pkcs11_module_path);
++		nm_supplicant_config_set_pkcs11_module_init_args (self,
++														  nm_setting_802_1x_get_pkcs11_module_init_args (setting_8021x));
++
++		add_string_val (self, "1", "engine", FALSE, FALSE);
++		add_string_val (self, "pkcs11", "engine_id", FALSE, FALSE);
++
++		/* TODO: handle more than one slot */
++		add_string_val (self, nm_setting_802_1x_get_pkcs11_ca_cert (setting_8021x), "ca_cert_id", FALSE, FALSE);
++		add_string_val (self, nm_setting_802_1x_get_pkcs11_client_cert (setting_8021x), "cert_id", FALSE, FALSE);
++		add_string_val (self, nm_setting_802_1x_get_pkcs11_private_key (setting_8021x), "key_id", FALSE, FALSE);
++		add_string_val (self, nm_setting_802_1x_get_pkcs11_phase2_ca_cert (setting_8021x), "ca_cert2_id", FALSE, FALSE);
++		add_string_val (self, nm_setting_802_1x_get_pkcs11_phase2_client_cert (setting_8021x), "cert2_id", FALSE, FALSE);
++		add_string_val (self, nm_setting_802_1x_get_pkcs11_phase2_private_key (setting_8021x), "key2_id", FALSE, FALSE);
++	}
++
+ 	return TRUE;
+ }
+ 
+Index: network-manager-0.8.9997/src/supplicant-manager/nm-supplicant-config.h
+===================================================================
+--- network-manager-0.8.9997.orig/src/supplicant-manager/nm-supplicant-config.h	2011-05-30 09:41:33.000000000 -0400
++++ network-manager-0.8.9997/src/supplicant-manager/nm-supplicant-config.h	2011-05-30 09:43:57.323717806 -0400
+@@ -57,6 +57,21 @@
+ void nm_supplicant_config_set_ap_scan (NMSupplicantConfig *self,
+                                        guint32 ap_scan);
+ 
++const char *nm_supplicant_config_get_pkcs11_engine_path (NMSupplicantConfig * self);
++
++void nm_supplicant_config_set_pkcs11_engine_path (NMSupplicantConfig * self,
++                                                  const char *pkcs11_engine_path);
++
++const char *nm_supplicant_config_get_pkcs11_module_path (NMSupplicantConfig * self);
++
++void nm_supplicant_config_set_pkcs11_module_path (NMSupplicantConfig * self,
++                                                  const char *pkcs11_module_path);
++
++const char *nm_supplicant_config_get_pkcs11_module_init_args (NMSupplicantConfig * self);
++
++void nm_supplicant_config_set_pkcs11_module_init_args (NMSupplicantConfig * self,
++													   const char *pkcs11_module_init_args);
++
+ GHashTable *nm_supplicant_config_get_hash (NMSupplicantConfig *self);
+ 
+ GHashTable *nm_supplicant_config_get_blobs (NMSupplicantConfig *self);
+Index: network-manager-0.8.9997/src/supplicant-manager/nm-supplicant-interface.c
+===================================================================
+--- network-manager-0.8.9997.orig/src/supplicant-manager/nm-supplicant-interface.c	2011-05-30 09:41:33.000000000 -0400
++++ network-manager-0.8.9997/src/supplicant-manager/nm-supplicant-interface.c	2011-05-30 09:43:57.323717806 -0400
+@@ -909,6 +909,13 @@
+ 	return val;
+ }
+ 
++static void
++blob_free (GValue *val)
++{
++        g_value_unset (val);
++        g_slice_free (GValue, val);
++}
++
+ gboolean
+ nm_supplicant_interface_request_scan (NMSupplicantInterface * self)
+ {
+@@ -916,6 +923,8 @@
+ 	NMSupplicantInfo *info;
+ 	DBusGProxyCall *call;
+ 	GHashTable *hash;
++	const char *pkcs11_engine_path;
++	const char *pkcs11_module_path;
+ 
+ 	g_return_val_if_fail (NM_IS_SUPPLICANT_INTERFACE (self), FALSE);
+ 
+@@ -935,6 +944,41 @@
+ 	g_hash_table_destroy (hash);
+ 	nm_supplicant_info_set_call (info, call);
+ 
++	if (!call)
++		return FALSE;
++
++	pkcs11_engine_path = nm_supplicant_config_get_pkcs11_engine_path (priv->cfg);
++	pkcs11_module_path = nm_supplicant_config_get_pkcs11_module_path (priv->cfg);
++
++	if (pkcs11_engine_path && pkcs11_module_path) {
++		GHashTable *pkcs11_config_hash;
++		GValue *val;
++
++		pkcs11_config_hash = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, (GDestroyNotify) blob_free);
++
++		val = g_slice_new0 (GValue);
++		g_value_init (val, G_TYPE_STRING);
++		g_value_set_string (val, pkcs11_engine_path);
++		g_hash_table_insert (pkcs11_config_hash, "pkcs11_engine_path", val);
++
++		val = g_slice_new0 (GValue);
++		g_value_init (val, G_TYPE_STRING);
++		g_value_set_string (val, pkcs11_module_path);
++		g_hash_table_insert (pkcs11_config_hash, "pkcs11_module_path", val);
++
++		/* TODO: waiting on pkcs11_module_init_args support in wpasupplicant
++		tmp = nm_supplicant_config_get_pkcs11_module_init_args (priv->cfg);
++		g_hash_table_insert (pkcs11_config_hash, "pkcs11_module_init_args",
++		                     str_to_gvalue(tmp));
++		*/
++
++		dbus_g_proxy_call_no_reply (priv->iface_proxy, "setSmartcardModules",
++									DBUS_TYPE_G_MAP_OF_VARIANT,
++									pkcs11_config_hash,
++									G_TYPE_INVALID);
++		g_hash_table_destroy (pkcs11_config_hash);
++	}
++
+ 	return call != NULL;
+ }
+ 
+Index: network-manager-0.8.9997/src/supplicant-manager/nm-supplicant-settings-verify.c
+===================================================================
+--- network-manager-0.8.9997.orig/src/supplicant-manager/nm-supplicant-settings-verify.c	2011-05-30 09:41:33.000000000 -0400
++++ network-manager-0.8.9997/src/supplicant-manager/nm-supplicant-settings-verify.c	2011-05-30 09:43:57.323717806 -0400
+@@ -121,7 +121,12 @@
+ 	{ "pac_file",           TYPE_BYTES,   0, 0, FALSE,  NULL },
+ 	{ "engine",             TYPE_INT,     0, 1, FALSE,  NULL },
+ 	{ "engine_id",          TYPE_BYTES,   0, 0, FALSE,  NULL },
+-	{ "key_id",             TYPE_BYTES,   0, 0, FALSE,  NULL },
++	{ "ca_cert_id",         TYPE_BYTES,   0, 0, FALSE,  NULL },
++	{ "cert_id",            TYPE_BYTES,   0, 0, FALSE,  NULL },
++ 	{ "key_id",             TYPE_BYTES,   0, 0, FALSE,  NULL },
++	{ "ca_cert2_id",        TYPE_BYTES,   0, 0, FALSE,  NULL },
++	{ "cert2_id",           TYPE_BYTES,   0, 0, FALSE,  NULL },
++	{ "key2_id",            TYPE_BYTES,   0, 0, FALSE,  NULL },
+ 	{ "fragment_size",      TYPE_INT,     1, 2000, FALSE,  NULL },
+ 	{ "proactive_key_caching", TYPE_INT,  0, 1, FALSE,  NULL },
+ 	{ "bgscan",             TYPE_BYTES,   0, 0, FALSE,  NULL },

@@ -1,0 +1,40 @@
+From d092feea96b632edf87c60902462d6fb05946c6f Mon Sep 17 00:00:00 2001
+From: Martin Pitt <martinpitt@gnome.org>
+Date: Fri, 26 Apr 2013 14:48:34 +0200
+Subject: [PATCH] configure: Check libsystemd-login version for suspend-resume
+
+Some distributions (Debian and Ubuntu in particular) will soon use systemd's
+logind, but not its init part. Check for a recent enough "libsystemd-login"
+version instead of "systemd", as suspend/resume and inhibitors are all in
+logind.
+
+Bug: https://bugzilla.gnome.org/show_bug.cgi?id=698947
+---
+ configure.ac | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 6fa6569..a369be3 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -308,7 +308,7 @@ AC_MSG_RESULT($with_session_tracking)
+ 
+ AC_ARG_WITH(suspend-resume, AS_HELP_STRING([--with-suspend-resume=upower|systemd], [Build NetworkManager with specific suspend/resume support]))
+ if test "z$with_suspend_resume" = "z"; then
+-    PKG_CHECK_EXISTS([systemd >= 183], [have_systemd_inhibit=yes], [have_systemd_inhibit=no])
++    PKG_CHECK_EXISTS([libsystemd-login >= 183], [have_systemd_inhibit=yes], [have_systemd_inhibit=no])
+     if test "z${have_systemd_inhibit}" = "zyes"; then
+ 	# Use systemd if it's new enough
+ 	with_suspend_resume="systemd"
+@@ -321,7 +321,7 @@ fi
+ case $with_suspend_resume in
+     upower) ;;
+     systemd)
+-	PKG_CHECK_MODULES(SYSTEMD_INHIBIT, [systemd >= 183])
++	PKG_CHECK_MODULES(SYSTEMD_INHIBIT, [libsystemd-login >= 183])
+         ;;
+     *)
+ 	AC_MSG_ERROR(--with-suspend-resume must be one of [upower, systemd])
+-- 
+1.8.1.2
+

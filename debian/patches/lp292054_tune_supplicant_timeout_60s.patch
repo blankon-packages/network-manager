@@ -1,0 +1,16 @@
+From: Alexander Sack <asac@ubuntu.com>
+Subject: Workaround driver/wpasupplicant slowness bug by giving association
+ more time
+Bug-Ubuntu: http://launchpad.net/bugs/292054
+
+--- network-manager-0.8.1~beta1~git.20100510t073507.f3057a6.orig/src/nm-device-wifi.c	2010-05-10 19:39:11.000000000 +0000
++++ network-manager-0.8.1~beta1~git.20100510t073507.f3057a6/src/nm-device-wifi.c	2010-05-10 19:56:21.000000000 +0000
+@@ -2792,7 +2792,7 @@
+ 	priv = NM_DEVICE_WIFI_GET_PRIVATE (self);
+ 
+ 	/* Set up a timeout on the connection attempt to fail it after 25 seconds */
+-	id = g_timeout_add_seconds (25, supplicant_connection_timeout_cb, self);
++	id = g_timeout_add_seconds (60, supplicant_connection_timeout_cb, self);
+ 	if (id == 0) {
+ 		nm_log_err (LOGD_DEVICE | LOGD_WIFI,
+ 		            "Activation (%s/wireless): couldn't start supplicant "

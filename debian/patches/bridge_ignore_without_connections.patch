@@ -1,0 +1,85 @@
+From: Mathieu Trudel-Lapierre <mathieu.trudel-lapierre@canonical.com>
+Subject: Ignore bridge devices when they have no configured connections
+
+So as not to break lxc and other systems that manage bridge or other network
+devices themselves.
+
+---
+ src/nm-manager.c |   27 ++++++++++++++++++++++++---
+ 1 file changed, 24 insertions(+), 3 deletions(-)
+
+Index: b/src/nm-manager.c
+===================================================================
+--- a/src/nm-manager.c
++++ b/src/nm-manager.c
+@@ -1723,7 +1723,7 @@ add_device (NMManager *self, NMDevice *d
+ 	static guint32 devcount = 0;
+ 	const GSList *unmanaged_specs;
+ 	NMConnection *existing = NULL;
+-	gboolean managed = FALSE, enabled = FALSE;
++	gboolean managed = FALSE, enabled = FALSE, inhibit_managed = FALSE;
+ 	RfKillType rtype;
+ 	NMDeviceType devtype;
+ 
+@@ -1775,6 +1775,14 @@ add_device (NMManager *self, NMDevice *d
+ 		g_signal_connect (device, NM_DEVICE_MODEM_ENABLE_CHANGED,
+ 		                  G_CALLBACK (manager_modem_enabled_changed),
+ 		                  self);
++	} else if (devtype == NM_DEVICE_TYPE_BRIDGE) {
++		GSList *connections = NULL;
++
++		connections = nm_settings_get_connections (priv->settings);
++		inhibit_managed = nm_device_connection_match_config (device, (const GSList *) connections) == NULL
++				 ? TRUE : FALSE;
++		nm_log_dbg (LOGD_HW, "MATT: should inhibit: %s", inhibit_managed ? "true" : "false");
++		g_slist_free (connections);
+ 	}
+ 
+ 	/* Update global rfkill state for this device type with the device's
+@@ -1823,7 +1831,8 @@ add_device (NMManager *self, NMDevice *d
+ 	/* Start the device if it's supposed to be managed */
+ 	unmanaged_specs = nm_settings_get_unmanaged_specs (priv->settings);
+ 	if (   !manager_sleeping (self)
+-	    && !nm_device_spec_match_list (device, unmanaged_specs)) {
++	    && !nm_device_spec_match_list (device, unmanaged_specs)
++	    && !inhibit_managed) {
+ 		nm_device_set_managed (device,
+ 		                       TRUE,
+ 		                       existing ? NM_DEVICE_STATE_REASON_CONNECTION_ASSUMED :
+@@ -3157,6 +3166,7 @@ do_sleep_wake (NMManager *self)
+ {
+ 	NMManagerPrivate *priv = NM_MANAGER_GET_PRIVATE (self);
+ 	const GSList *unmanaged_specs;
++	gboolean inhibit_managed = FALSE;
+ 	GSList *iter;
+ 
+ 	if (manager_sleeping (self)) {
+@@ -3182,6 +3192,7 @@ do_sleep_wake (NMManager *self)
+ 		/* Re-manage managed devices */
+ 		for (iter = priv->devices; iter; iter = iter->next) {
+ 			NMDevice *device = NM_DEVICE (iter->data);
++			NMDeviceType devtype = nm_device_get_device_type (device);
+ 			guint i;
+ 
+ 			/* enable/disable wireless devices since that we don't respond
+@@ -3201,9 +3212,19 @@ do_sleep_wake (NMManager *self)
+ 					nm_device_set_enabled (device, enabled);
+ 			}
+ 
++		        if (devtype == NM_DEVICE_TYPE_BRIDGE) {
++				GSList *connections = NULL;
++
++				connections = nm_settings_get_connections (priv->settings);
++				inhibit_managed = nm_device_connection_match_config (device, (const GSList *) connections) == NULL
++				                       ? TRUE : FALSE;
++				nm_log_dbg (LOGD_HW, "MATT: should inhibit on wake: %s", inhibit_managed ? "true" : "false");
++				g_slist_free (connections);
++			}
++
+ 			g_object_set (G_OBJECT (device), NM_DEVICE_AUTOCONNECT, TRUE, NULL);
+ 
+-			if (nm_device_spec_match_list (device, unmanaged_specs))
++			if (nm_device_spec_match_list (device, unmanaged_specs) || inhibit_managed)
+ 				nm_device_set_managed (device, FALSE, NM_DEVICE_STATE_REASON_NOW_UNMANAGED);
+ 			else
+ 				nm_device_set_managed (device, TRUE, NM_DEVICE_STATE_REASON_NOW_MANAGED);

@@ -18,7 +18,7 @@ set -e
 
 case "$1" in
     purge)
-        # Clean up state files on purge
+        # Clean up state file on purge
         if [ -d /var/lib/NetworkManager ]; then
             rm -f /var/lib/NetworkManager/NetworkManager.state
             rm -f /var/lib/NetworkManager/seen-bssids
@@ -27,8 +27,8 @@ case "$1" in
         fi
         ;;
     remove)
-        # Since we no longer run the ifblacklist_migrate.sh script
-        # we also don't need to clean up anymore afterwards.
+	# here we knowingly deviate from Debian, since we don't disable
+        # ifupdown configs in any way, no need to clean it up.
         ;;
     upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
         ;;

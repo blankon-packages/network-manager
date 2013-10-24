@@ -1,0 +1,95 @@
+---
+ src/dns-manager/nm-dns-dnsmasq.c        |    8 ++++----
+ src/dns-manager/nm-dns-manager.c        |    6 +++---
+ src/org.freedesktop.NetworkManager.conf |   10 ++++++++++
+ 3 files changed, 17 insertions(+), 7 deletions(-)
+
+--- a/src/dns-manager/nm-dns-dnsmasq.c
++++ b/src/dns-manager/nm-dns-dnsmasq.c
+@@ -52,7 +52,7 @@
+ #define CONFFILE NMRUNDIR "/dnsmasq.conf"
+ #define CONFDIR NMCONFDIR "/dnsmasq.d"
+ 
+-#define DNSMASQ_DBUS_SERVICE "uk.org.thekelleys.dnsmasq"
++#define DNSMASQ_DBUS_SERVICE "org.freedesktop.NetworkManager.dnsmasq"
+ #define DNSMASQ_DBUS_PATH "/uk/org/thekelleys/dnsmasq"
+ #define DNSMASQ_DBUS_INTERFACE "uk.org.thekelleys.dnsmasq"
+ 
+@@ -290,11 +290,11 @@
+ 	argv[idx++] = "--no-hosts"; /* don't use /etc/hosts to resolve */
+ 	argv[idx++] = "--bind-interfaces";
+ 	argv[idx++] = "--pid-file=" PIDFILE;
+-	argv[idx++] = "--listen-address=127.0.0.1"; /* Should work for both 4 and 6 */
++	argv[idx++] = "--listen-address=127.0.1.1"; /* Should work for both 4 and 6 */
+ 	argv[idx++] = "--conf-file=" CONFFILE;
+ 	argv[idx++] = "--cache-size=0";
+ 	argv[idx++] = "--proxy-dnssec"; /* Allow DNSSEC to pass through */
+-	argv[idx++] = "--enable-dbus";
++	argv[idx++] = "--enable-dbus=" DNSMASQ_DBUS_SERVICE;
+ 
+ 	/* dnsmasq exits if the conf dir is not present */
+ 	if (g_file_test (CONFDIR, G_FILE_TEST_IS_DIR))
+@@ -415,7 +415,7 @@
+ 
+ 	/* If all the configs lists are empty, there is just nothing to be caching --
+ 	 * we cleared up the dnsmasq cache; but we should also fail the update, so
+-	 * that we don't write 127.0.0.1 to resolv.conf.
++	 * that we don't write 127.0.1.1 to resolv.conf.
+ 	 */
+ 	if (((vpn_configs && g_slist_length (vpn_configs) < 1) || !vpn_configs) &&
+ 	    ((dev_configs && g_slist_length (dev_configs) < 1) || !dev_configs) &&
+--- a/src/dns-manager/nm-dns-manager.c
++++ b/src/dns-manager/nm-dns-manager.c
+@@ -728,7 +728,7 @@
+ 	g_slist_free (dev_configs);
+ 	g_slist_free (other_configs);
+ 
+-	/* If caching was successful, we only send 127.0.0.1 to /etc/resolv.conf
++	/* If caching was successful, we only send 127.0.1.1 to /etc/resolv.conf
+ 	 * to ensure that the glibc resolver doesn't try to round-robin nameservers,
+ 	 * but only uses the local caching nameserver.
+ 	 */
+@@ -736,7 +736,7 @@
+ 		if (nameservers)
+ 			g_strfreev (nameservers);
+ 		nameservers = g_new0 (char*, 2);
+-		nameservers[0] = g_strdup ("127.0.0.1");
++		nameservers[0] = g_strdup ("127.0.1.1");
+ 	}
+ 
+ #ifdef RESOLVCONF_PATH
+@@ -1146,7 +1146,7 @@
+ 		priv->plugins = NULL;
+ 
+ 		/* If we're quitting leave a valid resolv.conf in place, not one
+-		 * pointing to 127.0.0.1 if any plugins were active.  Thus update
++		 * pointing to 127.0.1.1 if any plugins were active.  Thus update
+ 		 * DNS after disposing of all plugins.  But if we haven't done any
+ 		 * DNS updates yet, there's no reason to touch resolv.conf on shutdown.
+ 		 */
+--- a/src/org.freedesktop.NetworkManager.conf
++++ b/src/org.freedesktop.NetworkManager.conf
+@@ -24,6 +24,13 @@
+                 <allow send_destination="org.freedesktop.NetworkManager.pptp"/>
+                 <allow send_destination="org.freedesktop.NetworkManager.vpnc"/>
+                 <allow send_destination="org.freedesktop.NetworkManager.ssh"/>
++
++		<!-- Allow the custom name for the dnsmasq instance spawned by NM
++		     from the dns dnsmasq plugin to own it's dbus name, and for
++		     messages to be sent to it.
++		  -->
++                <allow own="org.freedesktop.NetworkManager.dnsmasq"/>
++                <allow send_destination="org.freedesktop.NetworkManager.dnsmasq"/>
+         </policy>
+         <policy at_console="true">
+                 <allow send_destination="org.freedesktop.NetworkManager"/>
+@@ -130,6 +137,9 @@
+                 <deny send_destination="org.freedesktop.NetworkManager"
+                        send_interface="org.freedesktop.NetworkManager"
+                        send_member="wake"/>
++
++                <deny own="org.freedesktop.NetworkManager.dnsmasq"/>
++                <deny send_destination="org.freedesktop.NetworkManager.dnsmasq"/>
+         </policy>
+ </busconfig>
+ 

@@ -1,1 +1,1 @@
-usr/lib/libnm-glib-vpn.so.*
+debian/tmp/usr/lib/*/libnm-glib-vpn.so.*

@@ -1,0 +1,19 @@
+From: Alexander Sack <asac@ubuntu.com>
+Subject: Don't manage devices set in /e/n/i, but at least keep them online.
+Bug-Ubuntu: http://launchpad.net/bugs/191889
+
+--- a/src/nm-manager.c
++++ b/src/nm-manager.c
+@@ -617,6 +617,12 @@
+ 				}
+ 			}
+ 
++			if (state == NM_DEVICE_STATE_UNMANAGED) {
++				new_state = NM_STATE_CONNECTED;
++				nm_log_info (LOGD_CORE, "Unmanaged Device found; state CONNECTED forced. "
++						"(see http://bugs.launchpad.net/bugs/191889)");
++			}
++
+ 			if (nm_device_is_activating (dev))
+ 				new_state = NM_STATE_CONNECTING;
+ 			else if (new_state != NM_STATE_CONNECTING) {
