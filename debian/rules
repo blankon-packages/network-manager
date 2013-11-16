@@ -1,154 +1,55 @@
 #!/usr/bin/make -f
 
-DEB_SOURCE := $(shell dpkg-parsechangelog | grep Source: | sed -e 's/Source: //')
-DEB_VERSION := $(shell dpkg-parsechangelog | grep Version: | sed -e 's/Version: //')
-DEB_UPSTREAM_VERSION := $(shell echo $(DEB_VERSION) | sed -e 's/-[^-]*$$//')
-DEB_MAJOR_VERSION := $(shell echo $(DEB_UPSTREAM_VERSION) | sed -e 's/git.*//')
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/buildflags.mk
 
-GIT_URL := git://anongit.freedesktop.org/NetworkManager/NetworkManager
-GIT_BRANCH := "master"
-GIT_BRANCH_NAME := NetworkManager
-
-ifneq (,$(LOCAL_BRANCH))
-LOCAL_REAL_BRANCH = $(realpath $(LOCAL_BRANCH))
-endif
-
-# Special case for daily builds, which need not fail because of symbol changes
-ifneq (,$(findstring ~pkg,$(DEB_VERSION)))
-    DPKG_GENSYMBOLS_ARGS := -c0
+ifeq (linux,$(DEB_HOST_ARCH_OS))
+  SESSION_TRACKING = systemd
 else
-    DPKG_GENSYMBOLS_ARGS := -c4
+  SESSION_TRACKING = consolekit
 endif
 
-EXTRA_CONFIGURE_FLAGS = --disable-silent-rules
 
 %:
-	dh $@ --with autoreconf
+	dh $@ --with gir
 
 override_dh_auto_configure:
-	dh_auto_configure -- $(EXTRA_CONFIGURE_FLAGS) \
+	dh_auto_configure -- \
 		--libexecdir=/usr/lib/NetworkManager \
 		--with-resolvconf=/sbin/resolvconf \
 		--with-dhclient=/sbin/dhclient \
 		--with-iptables=/sbin/iptables \
-		--with-crypto=nss \
-		--with-session-tracking=systemd \
-		--with-suspend-resume=systemd \
+		--with-systemdsystemunitdir=/lib/systemd/system \
+		--with-crypto=gnutls \
+		--with-session-tracking=$(SESSION_TRACKING) \
 		--disable-more-warnings \
+		--disable-modify-system \
 		--enable-polkit \
 		--enable-ppp \
 		--enable-ifupdown \
 		--enable-introspection \
 		--enable-doc \
 		--enable-concheck \
-		--enable-vala \
-		--with-tests \
+		--with-modem-manager-1 \
+		--enable-bluez4
 
 override_dh_install:
-	# Get rid of .la files.
-	find $(CURDIR)/debian/tmp -name '*.la' -delete
-	# Get rid of anything else we don't want to ever install.
-	rm -vf $(CURDIR)/debian/tmp/etc/init.d/NetworkManager
-	rm -vf $(CURDIR)/debian/tmp/usr/share/NetworkManager/gdb-cmd
-	# Install all other files to the right packages.
-	dh_install --fail-missing
+	dh_install --list-missing
 	install -m 755 debian/network-manager-dispatcher.script \
 		debian/network-manager/etc/NetworkManager/dispatcher.d/01ifupdown
 	install -m 755 debian/ifblacklist_migrate.sh \
 		debian/network-manager/usr/lib/NetworkManager
-	cd po; intltool-update -p
-	cd test; $(MAKE) install DESTDIR=$(CURDIR)/debian/network-manager
-	# copy dnsmasq configuration
-	mkdir -p debian/network-manager/etc/dnsmasq.d
-	cp debian/network-manager.dnsmasq debian/network-manager/etc/dnsmasq.d/network-manager
 
 override_dh_installinit:
-	dh_installinit --noscripts
+	dh_installinit -pnetwork-manager -R
 
 override_dh_makeshlibs:
-	dh_makeshlibs -X/usr/lib/NetworkManager/ -X/usr/lib/pppd/ -- $(DPKG_GENSYMBOLS_ARGS)
+	dh_makeshlibs -X/usr/lib/NetworkManager/ -X/usr/lib/pppd/
 
 override_dh_strip:
 	dh_strip --dbg-package=network-manager-dbg
 
-override_dh_shlibdeps:
-	dh_shlibdeps
-	dh_girepository -plibnm-util2
-	dh_girepository -plibnm-glib4
+override_dh_builddeb:
+	dh_builddeb -- -Zxz
 
 override_dh_auto_test:
-	dbus-test-runner -m 300 -t dh_auto_test
-
-override_dh_clean:
-	dh_clean
-	rm -f po/*.gmo
-	rm -f debian/*.1
-	rm -f docs/libnm-glib/libnm-glib-overrides.txt
-	rm -f docs/libnm-util/libnm-util-overrides.txt docs/libnm-util/libnm-util.types
-	rm -f policy/*.policy
-
-override_dh_autoreconf_clean:
-	dh_autoreconf_clean
-	rm -f gtk-doc.make m4/gtk-doc.m4
-	rm -f m4/intltool.m4 intltool-*.in
-	rm -f aclocal.m4
-	rm -f po/Makefile.in.in
-
-override_dh_autoreconf:
-	if [ -f ./autogen.sh ]; \
-	then \
-		NOCONFIGURE=1 dh_autoreconf ./autogen.sh; \
-	else \
-		gtkdocize; \
-		autopoint --force; \
-		AUTOPOINT='intltoolize --automake --copy' autoreconf --force --install --verbose; \
-	fi
-
-GET_SOURCE = \
-	set -e; \
-	tmpdir=`mktemp -d -t`; \
-	cd $$tmpdir; \
-		echo "cloning upstream repository ..."; \
-		git clone -b $(GIT_BRANCH) $(if $(LOCAL_BRANCH),$(call LOCAL_REAL_BRANCH)/$(GIT_BRANCH_NAME),$(GIT_URL)) $(GIT_BRANCH_NAME); \
-		echo "getting specific upstream revision/tag: $(1)"; \
-		cd `ls | head -n 1`; git checkout -b orig $(1); \
-		commit_id=`git log -n1 --abbrev-commit | grep '^commit '  | sed -e 's/commit //' | sed -e 's/\.\.\.$$//'`; \
-		raw=`date --utc --date="$$(git log --pretty=fuller -n1 --date=rfc | grep CommitDate: | sed -e 's/CommitDate:[^0-9]*//')" "+%Y%m%d%H%M"`; \
-		if echo $(2) | grep -q -c "orig" || echo $(DEB_VERSION) | grep -q -c "git"; \
-		then \
-			upstream_version=$(DEB_MAJOR_VERSION)git$$raw.$$commit_id; \
-		else \
-			upstream_version=$(DEB_UPSTREAM_VERSION); \
-		fi; \
-		cd ..; tar --exclude=.git -czf $(CURDIR)/$(DEB_SOURCE)_$$upstream_version.orig.tar.gz `ls | head -n 1`; \
-		cd $(CURDIR); rm -rf $$tmpdir; 
-
-get-current-source:: $(if $(LOCAL_BRANCH),update-local-branch)
-	set -e; if echo $(DEB_VERSION) | grep -q -c "git"; \
-	then \
-		git_version=`echo $(DEB_VERSION) | sed -e 's/^.*git\.*\([0-9t]*\)\.\(.*\)-.*$$/\2/g'`; \
-	elif echo $(DEB_VERSION) | grep -q -c "~rc"; \
-	then \
-		git_version=`echo $(DEB_VERSION) | sed -e 's/^\([0-9\.]*\)\(~rc\)\([0-9]\)-.*$$/\1-rc\3/'`; \
-	else \
-		git_version=$(DEB_UPSTREAM_VERSION); \
-	fi; \
-	$(call GET_SOURCE, $$git_version, "current")
-
-get-orig-source:: $(if $(LOCAL_BRANCH),update-local-branch)
-	$(call GET_SOURCE, "HEAD", "orig")
-
-update-local-branch::
-	@echo "updating local branch ($(LOCAL_BRANCH))"
-	@set -e; if ! test -d $(LOCAL_BRANCH); then mkdir -p $(LOCAL_BRANCH); fi
-	@set -e; if ! test -d $(LOCAL_BRANCH)/$(GIT_BRANCH_NAME); then git clone $(GIT_URL) $(LOCAL_BRANCH)/$(GIT_BRANCH_NAME); fi
-	@set -e; cd $(LOCAL_BRANCH)/$(GIT_BRANCH_NAME); if ! `git branch | grep -q -c "$(GIT_BRANCH)"`; then git branch $(GIT_BRANCH) remotes/origin/$(GIT_BRANCH); fi
-	@set -e; cd $(LOCAL_BRANCH)/$(GIT_BRANCH_NAME); git checkout $(GIT_BRANCH); git pull -f
-	@echo "updated local branch ($(LOCAL_BRANCH))"
-
-get-snapshot-info:: $(if $(LOCAL_BRANCH),update-local-branch)
-	@set -e; \
-	git_version=`echo $(DEB_VERSION) | sed -e 's/^.*git\.*\([0-9t]*\)\.\(.*\)-.*$$/\2/g'`; \
-	cd $(LOCAL_BRANCH)/$(GIT_BRANCH_NAME); \
-	raw=`date --utc --date="$$(git log --pretty=fuller -n1 --date=rfc $$git_version | grep CommitDate: | sed -e 's/CommitDate:[^0-9]*//')" "+%Y-%m-%d %H:%M:%S (GMT)"`; \
-	git log -n1 $$git_version --format="%n%s%n%n  * upstream snapshot $$raw%n    + %H%n";
