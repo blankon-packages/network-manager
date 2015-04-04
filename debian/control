@@ -1,7 +1,8 @@
 Source: network-manager
 Section: net
 Priority: optional
-Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
+Maintianer: BlankOn Developers <blankon-dev@googlegroups.com>
+XSBC-Original-Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
 Uploaders: Michael Biebl <biebl@debian.org>, Sjoerd Simons <sjoerd@debian.org>
 Build-Depends: debhelper (>= 9),
                dh-systemd (>= 1.14),
@@ -17,6 +18,7 @@ Build-Depends: debhelper (>= 9),
                libnl-genl-3-dev (>= 3.2.8),
                ppp-dev (>= 2.4.6),
                libpolkit-gobject-1-dev,
+               libpolkit-agent-1-dev (>= 0.97),
                libgnutls28-dev,
                libgcrypt11-dev,
                uuid-dev,
@@ -28,15 +30,18 @@ Build-Depends: debhelper (>= 9),
                gobject-introspection (>= 0.9.12-4~),
                libsoup2.4-dev (>= 2.26),
                gtk-doc-tools,
+               perl,
+               libyaml-perl,
                libglib2.0-doc,
                libmm-glib-dev (>=  0.7.991),
                libndp-dev,
                libreadline-dev,
                libnewt-dev (>= 0.52.15),
-               libteam-dev (>= 1.9)
-Standards-Version: 3.9.5
+               libteam-dev (>= 1.9),
+               libbluetooth-dev (>= 5)
+Standards-Version: 3.9.6
 Vcs-Git: git://anonscm.debian.org/pkg-utopia/network-manager.git
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-utopia/network-manager.git;a=summary
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-utopia/network-manager.git
 Homepage: https://wiki.gnome.org/Projects/NetworkManager
 
 Package: network-manager
@@ -198,6 +203,40 @@ Depends: ${misc:Depends},
          libglib2.0-dev,
          libdbus-glib-1-dev
 Description: network management framework (development files)
+ NetworkManager is a system network service that manages your network devices
+ and connections, attempting to keep active network connectivity when
+ available. It manages ethernet, WiFi, mobile broadband (WWAN), and PPPoE
+ devices, and provides VPN integration with a variety of different VPN
+ services.
+ .
+ This package contains header and development files.
+
+Package: libnm0
+Section: libs
+Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: GObject-based client library for NetworkManager
+ NetworkManager is a system network service that manages your network devices
+ and connections, attempting to keep active network connectivity when
+ available. It manages ethernet, WiFi, mobile broadband (WWAN), and PPPoE
+ devices, and provides VPN integration with a variety of different VPN
+ services.
+ .
+ This package contains a convenience library to ease the access to
+ NetworkManager.
+
+Package: libnm-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         libnm0 (= ${binary:Version}),
+         gir1.2-networkmanager-1.0 (= ${binary:Version}),
+         libglib2.0-dev
+Description: GObject-based client library for NetworkManager (development files)
  NetworkManager is a system network service that manages your network devices
  and connections, attempting to keep active network connectivity when
  available. It manages ethernet, WiFi, mobile broadband (WWAN), and PPPoE

@@ -9,63 +9,62 @@ use the dbus activation feature to start ModemManager.
 
 Closes: #770871
 ---
- src/devices/wwan/nm-modem-manager.c | 16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ src/devices/wwan/nm-modem-manager.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
 diff --git a/src/devices/wwan/nm-modem-manager.c b/src/devices/wwan/nm-modem-manager.c
-index c481170..589fb5c 100644
+index f0e5692..b8ecba1 100644
 --- a/src/devices/wwan/nm-modem-manager.c
 +++ b/src/devices/wwan/nm-modem-manager.c
-@@ -21,6 +21,8 @@
-  */
- 
+@@ -25,6 +25,7 @@
  #include <string.h>
+ 
+ #include <libmm-glib.h>
 +#include <systemd/sd-daemon.h>
-+
- #include "config.h"
+ 
  #include "nm-modem-manager.h"
  #include "nm-logging.h"
-@@ -466,10 +468,9 @@ modem_manager_1_name_owner_changed (MMManager *modem_manager_1,
+@@ -202,10 +203,9 @@ modem_manager_name_owner_changed (MMManager *modem_manager,
  	if (!name_owner) {
  		nm_log_info (LOGD_MB, "ModemManager disappeared from bus");
  
 -#if !HAVE_SYSTEMD
  		/* If not managed by systemd, schedule relaunch */
--		schedule_modem_manager_1_relaunch (self, 0);
+-		schedule_modem_manager_relaunch (self, 0);
 -#endif
 +		if (!sd_booted())
-+			schedule_modem_manager_1_relaunch (self, 0);
++			schedule_modem_manager_relaunch (self, 0);
  
  		return;
  	}
-@@ -490,8 +491,6 @@ modem_manager_1_name_owner_changed (MMManager *modem_manager_1,
+@@ -226,8 +226,6 @@ modem_manager_name_owner_changed (MMManager *modem_manager,
  	 */
  }
  
 -#if !HAVE_SYSTEMD
 -
  static void
- modem_manager_1_poke_cb (GDBusConnection *connection,
-                          GAsyncResult *res,
-@@ -540,8 +539,6 @@ modem_manager_1_poke (NMModemManager *self)
+ modem_manager_poke_cb (GDBusConnection *connection,
+                        GAsyncResult *res,
+@@ -276,8 +274,6 @@ modem_manager_poke (NMModemManager *self)
  	                        g_object_ref (self)); /* user_data */
  }
  
 -#endif /* HAVE_SYSTEMD */
 -
  static void
- modem_manager_1_check_name_owner (NMModemManager *self)
+ modem_manager_check_name_owner (NMModemManager *self)
  {
-@@ -555,10 +552,9 @@ modem_manager_1_check_name_owner (NMModemManager *self)
+@@ -291,10 +287,9 @@ modem_manager_check_name_owner (NMModemManager *self)
  		return;
  	}
  
 -#if !HAVE_SYSTEMD
  	/* If the lifecycle is not managed by systemd, poke */
--	modem_manager_1_poke (self);
+-	modem_manager_poke (self);
 -#endif
 +	if (!sd_booted())
-+		modem_manager_1_poke (self);
++		modem_manager_poke (self);
  }
  
  static void
