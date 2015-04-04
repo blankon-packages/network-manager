@@ -1,7 +1,7 @@
 Source: network-manager
 Section: net
 Priority: optional
-Maintianer: BlankOn Developers <blankon-dev@googlegroups.com>
+Maintainer: BlankOn Developers <blankon-dev@googlegroups.com>
 XSBC-Original-Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
 Uploaders: Michael Biebl <biebl@debian.org>, Sjoerd Simons <sjoerd@debian.org>
 Build-Depends: debhelper (>= 9),
