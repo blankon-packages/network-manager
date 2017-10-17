@@ -1,14 +1,23 @@
-network-manager (1.8.4-1blankon2) uluwatu; urgency=medium
-
-  * Change linux-any to any in architecture
-
- -- AnTo SamalonA <ansamsoftdev@gmail.com>  Tue, 26 Sep 2017 12:56:55 +0800
-
-network-manager (1.8.4-1blankon1) uluwatu; urgency=medium
+network-manager (1.8.4-3blankon1) uluwatu; urgency=medium
 
   * New upstream release
 
- -- AnTo SamalonA <ansamsoftdev@gmail.com>  Tue, 26 Sep 2017 06:21:00 +0800
+ -- AnTo SamalonA <ansamsoftdev@gmail.com>  Wed, 18 Oct 2017 07:47:05 +0800
+
+network-manager (1.8.4-3) unstable; urgency=medium
+
+  * manager: Disconnect from signals on the proxy when we're disposed.
+    Fixes a segfault in manager_recheck_permissions() when unlocking.
+
+ -- Michael Biebl <biebl@debian.org>  Thu, 12 Oct 2017 23:28:37 +0200
+
+network-manager (1.8.4-2) unstable; urgency=medium
+
+  * Drop dependency on gir1.2-nm-1.0 from gir1.2-networkmanager-1.0
+  * Do not mark python-gi as <!nocheck>
+    It is needed to build the settings documentation. (Closes: #871519)
+
+ -- Michael Biebl <biebl@debian.org>  Thu, 28 Sep 2017 19:37:16 +0200
 
 network-manager (1.8.4-1) unstable; urgency=medium
 
