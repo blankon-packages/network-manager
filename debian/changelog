@@ -1,8 +1,15 @@
-network-manager (1.8.4-3blankon1) uluwatu; urgency=medium
+network-manager (1.8.4-4blankon1) uluwatu; urgency=medium
 
-  * New upstream release
+  * Merged with debian sid
 
- -- AnTo SamalonA <ansamsoftdev@gmail.com>  Wed, 18 Oct 2017 07:47:05 +0800
+ -- AnTo SamalonA <ansamsoftdev@gmail.com>  Mon, 23 Oct 2017 20:02:22 +0800
+
+network-manager (1.8.4-4) unstable; urgency=medium
+
+  * {vpn,remote}-connection: disconnect signal handlers when disposed.
+    Fixes a crash on VPN connection changes.
+
+ -- Michael Biebl <biebl@debian.org>  Sun, 22 Oct 2017 01:57:24 +0200
 
 network-manager (1.8.4-3) unstable; urgency=medium
 

@@ -46,7 +46,7 @@ Build-Depends: debhelper (>= 10.3),
                libbluetooth-dev (>= 5),
                valac (>= 0.17.1.24),
                dbus,
-               python-dbus
+               python-dbus 
 Standards-Version: 4.0.0
 Vcs-Git: https://anonscm.debian.org/git/pkg-utopia/network-manager.git
 Vcs-Browser: https://anonscm.debian.org/git/pkg-utopia/network-manager.git
