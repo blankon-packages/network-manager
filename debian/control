@@ -1,8 +1,7 @@
 Source: network-manager
 Section: net
 Priority: optional
-Maintainer: BlankOn Developers <blankon-dev@googlegroups.com>
-XSBC-Original-Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
+Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
 Uploaders: Michael Biebl <biebl@debian.org>,
  Sjoerd Simons <sjoerd@debian.org>,
  Aron Xu <aron@debian.org>
@@ -45,15 +44,15 @@ Build-Depends: debhelper (>= 10.3),
                libjansson-dev,
                libbluetooth-dev (>= 5),
                valac (>= 0.17.1.24),
-               dbus,
-               python-dbus
-Standards-Version: 4.1.1
+               dbus <!nocheck>,
+               python-dbus <!nocheck>
+Standards-Version: 4.1.2
 Vcs-Git: https://anonscm.debian.org/git/pkg-utopia/network-manager.git
 Vcs-Browser: https://anonscm.debian.org/git/pkg-utopia/network-manager.git
 Homepage: https://wiki.gnome.org/Projects/NetworkManager
 
 Package: network-manager
-Architecture: any
+Architecture: linux-any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -94,7 +93,7 @@ Description: network management framework (daemon and userspace tools)
 
 Package: network-manager-dev
 Section: devel
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Depends: ${misc:Depends}
 Description: network management framework (development files)
@@ -103,7 +102,7 @@ Description: network management framework (development files)
 
 Package: libnm-glib4
 Section: libs
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends},
@@ -120,7 +119,7 @@ Description: network management framework (GLib shared library)
 
 Package: libnm-glib-dev
 Section: libdevel
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Depends: ${misc:Depends},
          libnm-glib4 (= ${binary:Version}),
@@ -141,7 +140,7 @@ Description: network management framework (GLib interface)
 
 Package: libnm-glib-vpn1
 Section: libs
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends},
@@ -158,7 +157,7 @@ Description: network management framework (GLib VPN shared library)
 
 Package: libnm-glib-vpn-dev
 Section: libdevel
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Depends: ${misc:Depends},
          libnm-glib-vpn1 (= ${binary:Version}),
@@ -175,7 +174,7 @@ Description: network management framework (GLib interface)
 
 Package: libnm-util2
 Section: libs
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends},
@@ -192,7 +191,7 @@ Description: network management framework (shared library)
 
 Package: libnm-util-dev
 Section: libdevel
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Depends: ${misc:Depends},
          libnm-util2 (= ${binary:Version}),
@@ -212,7 +211,7 @@ Description: network management framework (development files)
 
 Package: libnm0
 Section: libs
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends},
@@ -229,7 +228,7 @@ Description: GObject-based client library for NetworkManager
 
 Package: libnm-dev
 Section: libdevel
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Depends: ${misc:Depends},
          libnm0 (= ${binary:Version}),
@@ -246,7 +245,7 @@ Description: GObject-based client library for NetworkManager (development files)
 
 Package: gir1.2-networkmanager-1.0
 Section: introspection
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Depends: ${gir:Depends},
          ${shlibs:Depends},
@@ -266,7 +265,7 @@ Description: GObject introspection data for the libnm-glib/libnm-util library
 
 Package: gir1.2-nm-1.0
 Section: introspection
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
 Depends: ${gir:Depends},
          ${shlibs:Depends},
